@@ -595,11 +595,23 @@ class ModelsCommand extends Command
                         $this->setProperty($name, $type, true, null, $comment);
                     }
                 } elseif ($isAttribute) {
-                    $name = Str::snake($method);
+                    $snake = Str::snake($method);
+                    $camel = Str::camel($method);
                     $types = $this->getAttributeReturnType($model, $method);
 
-                    if ($this->hasCamelCaseModelProperties()) {
-                        $name = Str::camel($name);
+                    $name = '';
+                    if(isset($this->properties[$snake])) {
+                        $name = $snake;
+                    }
+                    if(isset($this->properties[$camel])) {
+                        $name = $camel;
+                    }
+
+                    if(!$name) {
+                        $name = $snake;
+                        if ($this->hasCamelCaseModelProperties()) {
+                            $name = $camel;
+                        }
                     }
 
                     if ($types->has('get')) {
