@@ -196,7 +196,7 @@ class ModelsCommand extends Command
     protected function getArguments()
     {
         return [
-          ['model', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Which models to include', []],
+            ['model', InputArgument::OPTIONAL | InputArgument::IS_ARRAY, 'Which models to include', []],
         ];
     }
 
@@ -208,21 +208,21 @@ class ModelsCommand extends Command
     protected function getOptions()
     {
         return [
-          ['filename', 'F', InputOption::VALUE_OPTIONAL, 'The path to the helper file'],
-          ['dir', 'D', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
-              'The model dir, supports glob patterns', [], ],
-          ['write', 'W', InputOption::VALUE_NONE, 'Write to Model file'],
-          ['write-mixin', 'M', InputOption::VALUE_NONE,
-              "Write models to {$this->filename} and adds @mixin to each model, avoiding IDE duplicate declaration warnings",
-          ],
-          ['nowrite', 'N', InputOption::VALUE_NONE, 'Don\'t write to Model file'],
-          ['reset', 'R', InputOption::VALUE_NONE, 'Remove the original phpdocs instead of appending'],
-          ['smart-reset', 'r', InputOption::VALUE_NONE, 'Refresh the properties/methods list, but keep the text'],
-          ['phpstorm-noinspections', 'p', InputOption::VALUE_NONE,
-              'Add PhpFullyQualifiedNameUsageInspection and PhpUnnecessaryFullyQualifiedNameInspection PHPStorm ' .
-              'noinspection tags',
-          ],
-          ['ignore', 'I', InputOption::VALUE_OPTIONAL, 'Which models to ignore', ''],
+            ['filename', 'F', InputOption::VALUE_OPTIONAL, 'The path to the helper file'],
+            ['dir', 'D', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
+                'The model dir, supports glob patterns', [], ],
+            ['write', 'W', InputOption::VALUE_NONE, 'Write to Model file'],
+            ['write-mixin', 'M', InputOption::VALUE_NONE,
+                "Write models to {$this->filename} and adds @mixin to each model, avoiding IDE duplicate declaration warnings",
+            ],
+            ['nowrite', 'N', InputOption::VALUE_NONE, 'Don\'t write to Model file'],
+            ['reset', 'R', InputOption::VALUE_NONE, 'Remove the original phpdocs instead of appending'],
+            ['smart-reset', 'r', InputOption::VALUE_NONE, 'Refresh the properties/methods list, but keep the text'],
+            ['phpstorm-noinspections', 'p', InputOption::VALUE_NONE,
+                'Add PhpFullyQualifiedNameUsageInspection and PhpUnnecessaryFullyQualifiedNameInspection PHPStorm ' .
+                'noinspection tags',
+            ],
+            ['ignore', 'I', InputOption::VALUE_OPTIONAL, 'Which models to ignore', ''],
         ];
     }
 
@@ -458,6 +458,13 @@ class ModelsCommand extends Command
         return $typeOverrides[$type] ?? $type;
     }
 
+    protected $modelColumns = [];
+
+    protected function isTableProperty($modelClass, $property)
+    {
+        return isset($this->modelColumns[$modelClass][$property]);
+    }
+
     /**
      * Load the properties from the database table.
      *
@@ -467,6 +474,8 @@ class ModelsCommand extends Command
      */
     public function getPropertiesFromTable($model)
     {
+        $modelClass = $model::class;
+
         $database = $model->getConnection()->getDatabaseName();
         $table = $model->getConnection()->getTablePrefix() . $model->getTable();
         $schema = $model->getConnection()->getDoctrineSchemaManager();
@@ -496,6 +505,8 @@ class ModelsCommand extends Command
         $this->setForeignKeys($schema, $table);
         foreach ($columns as $column) {
             $name = $column->getName();
+            $this->modelColumns[$modelClass][$name] = $name;
+
             if (in_array($name, $model->getDates())) {
                 $type = $this->dateClass;
             } else {
@@ -564,6 +575,27 @@ class ModelsCommand extends Command
         }
     }
 
+    protected function getNameAttribute($modelClass, $name)
+    {
+        $snake = Str::snake($name);
+        $camel = Str::camel($name);
+
+        if($this->isTableProperty($modelClass, $snake)){
+            return $snake;
+        }
+
+        if($this->isTableProperty($modelClass, $camel)){
+            return $camel;
+        }
+
+        $name = $snake;
+        if ($this->hasCamelCaseModelProperties()) {
+            $name = $camel;
+        }
+
+        return $name;
+    }
+
     /**
      * @param \Illuminate\Database\Eloquent\Model $model
      */
@@ -583,36 +615,15 @@ class ModelsCommand extends Command
                     ) && $method !== 'getAttribute'
                 ) {
                     //Magic get<name>Attribute
-                    $name = Str::snake(substr($method, 3, -9));
+                    $name = $this->getNameAttribute($model::class, substr($method, 3, -9));
                     if (!empty($name)) {
-                        if ($this->hasCamelCaseModelProperties()) {
-                            $name = Str::camel($name);
-                        }
-
                         $type = $this->getReturnType($reflection);
                         $type = $this->getTypeInModel($model, $type);
                         $comment = $this->getCommentFromDocBlock($reflection);
                         $this->setProperty($name, $type, true, null, $comment);
                     }
                 } elseif ($isAttribute) {
-                    $snake = Str::snake($method);
-                    $camel = Str::camel($method);
-                    $types = $this->getAttributeReturnType($model, $method);
-
-                    $name = '';
-                    if(isset($this->properties[$snake])) {
-                        $name = $snake;
-                    }
-                    if(isset($this->properties[$camel])) {
-                        $name = $camel;
-                    }
-
-                    if(!$name) {
-                        $name = $snake;
-                        if ($this->hasCamelCaseModelProperties()) {
-                            $name = $camel;
-                        }
-                    }
+                    $name = Str::snake($method);
 
                     if ($types->has('get')) {
                         $type = $this->getTypeInModel($model, $types['get']);
@@ -631,7 +642,7 @@ class ModelsCommand extends Command
                     ) && $method !== 'setAttribute'
                 ) {
                     //Magic set<name>Attribute
-                    $name = Str::snake(substr($method, 3, -9));
+                    $name = $this->getNameAttribute($model::class, substr($method, 3, -9));
                     if (!empty($name)) {
                         $comment = $this->getCommentFromDocBlock($reflection);
                         $this->setProperty($name, null, null, true, $comment);
