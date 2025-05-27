@@ -585,6 +585,10 @@ class ModelsCommand extends Command
                     //Magic get<name>Attribute
                     $name = Str::snake(substr($method, 3, -9));
                     if (!empty($name)) {
+                        if ($this->hasCamelCaseModelProperties()) {
+                            $name = Str::camel($name);
+                        }
+
                         $type = $this->getReturnType($reflection);
                         $type = $this->getTypeInModel($model, $type);
                         $comment = $this->getCommentFromDocBlock($reflection);
@@ -593,6 +597,10 @@ class ModelsCommand extends Command
                 } elseif ($isAttribute) {
                     $name = Str::snake($method);
                     $types = $this->getAttributeReturnType($model, $method);
+
+                    if ($this->hasCamelCaseModelProperties()) {
+                        $name = Str::camel($name);
+                    }
 
                     if ($types->has('get')) {
                         $type = $this->getTypeInModel($model, $types['get']);
@@ -895,10 +903,6 @@ class ModelsCommand extends Command
 
         foreach ($this->properties as $name => $property) {
             $name = "\$$name";
-
-            if ($this->hasCamelCaseModelProperties()) {
-                $name = Str::camel($name);
-            }
 
             if (in_array($name, $properties)) {
                 continue;
