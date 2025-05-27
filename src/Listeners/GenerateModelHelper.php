@@ -16,15 +16,15 @@ class GenerateModelHelper
      */
     public static $shouldRun = false;
 
-    /** @var Artisan */
+    /** @var \Illuminate\Contracts\Console\Kernel */
     protected $artisan;
 
-    /** @var Config */
+    /** @var \Illuminate\Contracts\Config\Repository */
     protected $config;
 
     /**
-     * @param  Artisan  $artisan
-     * @param  Config  $config
+     * @param  \Illuminate\Contracts\Console\Kernel  $artisan
+     * @param  \Illuminate\Contracts\Config\Repository  $config
      */
     public function __construct(Artisan $artisan, Config $config)
     {

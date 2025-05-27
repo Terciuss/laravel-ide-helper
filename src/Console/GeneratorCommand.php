@@ -42,7 +42,7 @@ class GeneratorCommand extends Command
     /** @var \Illuminate\Config\Repository */
     protected $config;
 
-    /** @var Filesystem */
+    /** @var \Illuminate\Filesystem\Filesystem */
     protected $files;
 
     /** @var \Illuminate\View\Factory */
@@ -54,7 +54,7 @@ class GeneratorCommand extends Command
     /**
      *
      * @param \Illuminate\Config\Repository $config
-     * @param Filesystem $files
+     * @param \Illuminate\Filesystem\Filesystem $files
      * @param \Illuminate\View\Factory $view
      */
     public function __construct(

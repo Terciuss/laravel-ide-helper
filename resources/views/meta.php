@@ -1,8 +1,6 @@
 <?= '<?php' ?>
 
-/* @noinspection ALL */
 // @formatter:off
-// phpcs:ignoreFile
 
 namespace PHPSTORM_META {
 

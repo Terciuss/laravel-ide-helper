@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
 
 class Method
 {
-    /** @var DocBlock  */
+    /** @var \Barryvdh\Reflection\DocBlock  */
     protected $phpdoc;
 
     /** @var \ReflectionMethod  */
